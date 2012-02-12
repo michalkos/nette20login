@@ -22,11 +22,11 @@ class PasswordAuthenticator extends Nette\Object implements \Nette\Security\IAut
 	 */
 	public function authenticate(array $credentials)
 	{
-		list($mail, $password) = $credentials;
-		$user = $this->userModel->findUser(array('mail' => $mail));
+		list($username, $password) = $credentials;
+		$user = $this->userModel->findUser(array('username' => $username));
 
 		if (!$user) {
-			throw new AuthenticationException("User '$mail' not found.", self::IDENTITY_NOT_FOUND);
+			throw new AuthenticationException("User '$username' not found.", self::IDENTITY_NOT_FOUND);
 		}
 
 		if ($user->password !== sha1($password)) {

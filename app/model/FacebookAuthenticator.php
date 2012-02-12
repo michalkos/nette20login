@@ -31,7 +31,7 @@ class FacebookAuthenticator
 	public function register(array $me)
 	{
 		return $this->userModel->registerUser(array(
-			'mail' => $me['email'],
+			'email' => $me['email'],
 			'fbuid' => $me['id'],
 			'name' => $me['name'],
 		));
@@ -45,8 +45,8 @@ class FacebookAuthenticator
 			$updateData['name'] = $me['name'];
 		}
 
-		if (empty($user['mail'])) {
-			$updateData['mail'] = $me['email'];
+		if (empty($user['email'])) {
+			$updateData['email'] = $me['email'];
 		}
 
 		if (!empty($updateData)) {
