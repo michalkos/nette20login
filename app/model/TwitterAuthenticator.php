@@ -17,7 +17,7 @@ class TwitterAuthenticator
 	 */
 	public function authenticate(stdClass $twitterUser)
 	{
-		$user = $this->userModel->findUser(array('twitter' => $twitterUser->screen_name));
+		$user = $this->userModel->findUser(array('twitter_id' => $twitterUser->id_str));
 
 		if ($user) {
 			$this->updateMissingData($user, $twitterUser);
@@ -30,7 +30,8 @@ class TwitterAuthenticator
 
 	public function register(stdClass $info)
 	{
-		$this->userModel->registerUser(array(
+		return $this->userModel->registerUser(array(
+			'twitter_id' => $info->id_str,
 			'twitter' => $info->screen_name,
 			'name' => $info->name,
 		));
@@ -38,11 +39,17 @@ class TwitterAuthenticator
 
 	public function updateMissingData($user, stdClass $info)
 	{
-		if (empty($user['name'])) {
-			$this->userModel->updateUser($user, array(
-				'name' => $info->name,
-			));
+		$updateData = array();
+		
+		if (empty($user['twitter'])) {
+			$updateData['twitter'] = $info->screen_name;
 		}
+		
+		if (empty($user['name'])) {
+			$updateData['name'] = $info->name;
+		}
+		
+		$this->userModel->updateUser($user, $updateData);
 	}
 
 }

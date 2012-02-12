@@ -56,6 +56,7 @@ class SignPresenter extends BasePresenter
 		$identity = $authenticator->authenticate($info);
 
 		$this->getUser()->login($identity);
+		$this->redirect('Homepage:');
 	}
 
 	protected function createComponentSignInForm()

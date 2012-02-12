@@ -34,7 +34,7 @@ class UserModel
 	public function registerUser(array $values)
 	{
 		// todo validate values
-		$this->database->table('users')->insert($values);
+		return $this->database->table('users')->insert($values);
 	}
 
 	public function createIdentity(ActiveRow $user)
