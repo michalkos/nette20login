@@ -59,16 +59,17 @@ class Compiler extends Nette\Object
 	/** @var string */
 	private $templateId;
 
-	/** @internal Context-aware escaping states */
+	/** Context-aware escaping states */
 	const CONTENT_HTML = 'html',
 		CONTENT_XHTML = 'xhtml',
 		CONTENT_XML = 'xml',
 		CONTENT_JS = 'js',
 		CONTENT_CSS = 'css',
 		CONTENT_ICAL = 'ical',
-		CONTENT_TEXT = 'text',
+		CONTENT_TEXT = 'text';
 
-		CONTEXT_COMMENT = 'comment',
+	/** @internal Context-aware escaping states */
+	const CONTEXT_COMMENT = 'comment',
 		CONTEXT_SINGLE_QUOTED = "'",
 		CONTEXT_DOUBLE_QUOTED = '"';
 
@@ -132,7 +133,7 @@ class Compiler extends Nette\Object
 					$this->processAttribute($token);
 				}
 			}
-		} catch (ParseException $e) {
+		} catch (CompileException $e) {
 			$e->sourceLine = $token->line;
 			throw $e;
 		}
@@ -140,7 +141,7 @@ class Compiler extends Nette\Object
 
 		foreach ($this->htmlNodes as $htmlNode) {
 			if (!empty($htmlNode->macroAttrs)) {
-				throw new ParseException("Missing end tag </$htmlNode->name> for macro-attribute " . Parser::N_PREFIX
+				throw new CompileException("Missing end tag </$htmlNode->name> for macro-attribute " . Parser::N_PREFIX
 					. implode(' and ' . Parser::N_PREFIX, array_keys($htmlNode->macroAttrs)) . ".", 0, $token->line);
 			}
 		}
@@ -155,10 +156,10 @@ class Compiler extends Nette\Object
 		$output = ($prologs ? $prologs . "<?php\n//\n// main template\n//\n?>\n" : '') . $output . $epilogs;
 
 		if ($this->macroNodes) {
-			throw new ParseException("There are unclosed macros.", 0, $token->line);
+			throw new CompileException("There are unclosed macros.", 0, $token->line);
 		}
 
-		$output = strtr($output, $this->attrCodes);
+		$output = $this->expandTokens($output);
 		return $output;
 	}
 
@@ -224,6 +225,13 @@ class Compiler extends Nette\Object
 	public function getLine()
 	{
 		return $this->tokens ? $this->tokens[$this->position]->line : NULL;
+	}
+
+
+
+	public function expandTokens($s)
+	{
+		return strtr($s, $this->attrCodes);
 	}
 
 
@@ -343,7 +351,7 @@ class Compiler extends Nette\Object
 				|| ($args && $node->args && !Strings::startsWith("$node->args ", "$args "))
 			) {
 				$name .= $args ? ' ' : '';
-				throw new ParseException("Unexpected macro {{$name}{$args}{$modifiers}}"
+				throw new CompileException("Unexpected macro {{$name}{$args}{$modifiers}}"
 					. ($node ? ", expecting {/$node->name}" . ($args && $node->args ? " or eventually {/$node->name $node->args}" : '') : ''));
 			}
 
@@ -436,12 +444,12 @@ class Compiler extends Nette\Object
 		}
 
 		if ($attrs) {
-			throw new ParseException("Unknown macro-attribute " . Parser::N_PREFIX
+			throw new CompileException("Unknown macro-attribute " . Parser::N_PREFIX
 				. implode(' and ' . Parser::N_PREFIX, array_keys($attrs)));
 		}
 
 		if (!$htmlNode->closing) {
-			$htmlNode->attrCode = & $this->attrCodes[$uniq = Nette\Utils\Strings::random()];
+			$htmlNode->attrCode = & $this->attrCodes[$uniq = ' n:' . Nette\Utils\Strings::random()];
 			$code = substr_replace($code, $uniq, strrpos($code, '/>') ?: strrpos($code, '>'), 0);
 		}
 
@@ -481,7 +489,8 @@ class Compiler extends Nette\Object
 	public function expandMacro($name, $args, $modifiers = NULL, HtmlNode $htmlNode = NULL)
 	{
 		if (empty($this->macros[$name])) {
-			throw new ParseException("Unknown macro {{$name}}");
+			$js = $this->htmlNodes && strtolower(end($this->htmlNodes)->name) === 'script';
+			throw new CompileException("Unknown macro {{$name}}" . ($js ? " (in JavaScript, try to put a space after bracket.)" : ''));
 		}
 		foreach (array_reverse($this->macros[$name]) as $macro) {
 			$node = new MacroNode($macro, $name, $args, $modifiers, $this->macroNodes ? end($this->macroNodes) : NULL, $htmlNode);
@@ -489,7 +498,7 @@ class Compiler extends Nette\Object
 				return $node;
 			}
 		}
-		throw new ParseException("Unhandled macro {{$name}}");
+		throw new CompileException("Unhandled macro {{$name}}");
 	}
 
 }
