@@ -25,6 +25,8 @@ common:
 		# zlib.output_compression: yes
 
 	nette:
+		session:
+			autoStart: smart
 		database:
 			default:
 				dsn: '%database.driver%:host=%database.host%;dbname=%database.dbname%'
