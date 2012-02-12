@@ -17,7 +17,7 @@ class FacebookAuthenticator
 	 */
 	public function authenticate(array $fbUser)
 	{
-		$user = $this->userModel->findUser(array('mail' => $fbUser['email']));
+		$user = $this->userModel->findUser(array('fbuid' => $fbUser['id']));
 
 		if ($user) {
 			$this->updateMissingData($user, $fbUser);
@@ -30,7 +30,7 @@ class FacebookAuthenticator
 
 	public function register(array $me)
 	{
-		$this->userModel->registerUser(array(
+		return $this->userModel->registerUser(array(
 			'mail' => $me['email'],
 			'fbuid' => $me['id'],
 			'name' => $me['name'],
@@ -45,8 +45,8 @@ class FacebookAuthenticator
 			$updateData['name'] = $me['name'];
 		}
 
-		if (empty($user['fbuid'])) {
-			$updateData['name'] = $me['id'];
+		if (empty($user['mail'])) {
+			$updateData['mail'] = $me['email'];
 		}
 
 		if (!empty($updateData)) {
